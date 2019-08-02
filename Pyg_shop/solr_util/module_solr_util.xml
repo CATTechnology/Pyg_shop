@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_solr_util" default="compile.module.solr_util">
+  <dirname property="module.solr_util.basedir" file="${ant.file.module_solr_util}"/>
+  
+  <property name="module.jdk.home.solr_util" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.solr_util" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.solr_util" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.solr_util" value="-encoding UTF-8 -source 5 -target 1.5 ${compiler.args}"/>
+  
+  <property name="solr_util.output.dir" value="${module.solr_util.basedir}/target/classes"/>
+  <property name="solr_util.testoutput.dir" value="${module.solr_util.basedir}/target/test-classes"/>
+  
+  <path id="solr_util.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="solr_util.module.production.classpath">
+    <path refid="${module.jdk.classpath.solr_util}"/>
+  </path>
+  
+  <path id="solr_util.runtime.production.module.classpath">
+    <pathelement location="${solr_util.output.dir}"/>
+  </path>
+  
+  <path id="solr_util.module.classpath">
+    <path refid="${module.jdk.classpath.solr_util}"/>
+    <pathelement location="${solr_util.output.dir}"/>
+  </path>
+  
+  <path id="solr_util.runtime.module.classpath">
+    <pathelement location="${solr_util.testoutput.dir}"/>
+    <pathelement location="${solr_util.output.dir}"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.solr_util">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.solr_util">
+    <patternset refid="excluded.from.module.solr_util"/>
+  </patternset>
+  
+  <path id="solr_util.module.sourcepath">
+    <dirset dir="${module.solr_util.basedir}">
+      <include name="src/main/java"/>
+      <include name="src/main/resources"/>
+    </dirset>
+  </path>
+  
+  <path id="solr_util.module.test.sourcepath">
+    <dirset dir="${module.solr_util.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.solr_util" depends="compile.module.solr_util.production,compile.module.solr_util.tests" description="Compile module solr_util"/>
+  
+  <target name="compile.module.solr_util.production" depends="register.custom.compilers" description="Compile module solr_util; production classes">
+    <mkdir dir="${solr_util.output.dir}"/>
+    <javac2 destdir="${solr_util.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.solr_util}/javac">
+      <compilerarg line="${compiler.args.solr_util}"/>
+      <bootclasspath refid="solr_util.module.bootclasspath"/>
+      <classpath refid="solr_util.module.production.classpath"/>
+      <src refid="solr_util.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.solr_util"/>
+    </javac2>
+    
+    <copy todir="${solr_util.output.dir}">
+      <fileset dir="${module.solr_util.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+      <fileset dir="${module.solr_util.basedir}/src/main/resources">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.solr_util.tests" depends="register.custom.compilers,compile.module.solr_util.production" description="compile module solr_util; test classes" unless="skip.tests">
+    <mkdir dir="${solr_util.testoutput.dir}"/>
+    <javac2 destdir="${solr_util.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.solr_util}/javac">
+      <compilerarg line="${compiler.args.solr_util}"/>
+      <bootclasspath refid="solr_util.module.bootclasspath"/>
+      <classpath refid="solr_util.module.classpath"/>
+      <src refid="solr_util.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.solr_util"/>
+    </javac2>
+    
+    <copy todir="${solr_util.testoutput.dir}">
+      <fileset dir="${module.solr_util.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.solr_util" description="cleanup module">
+    <delete dir="${solr_util.output.dir}"/>
+    <delete dir="${solr_util.testoutput.dir}"/>
+  </target>
+</project>

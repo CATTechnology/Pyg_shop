@@ -1,0 +1,190 @@
+package top.takefly.user.service.impl;
+
+import com.alibaba.dubbo.config.annotation.Service;
+import com.alibaba.fastjson.JSON;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.solr.common.util.Hash;
+import org.omg.CORBA.Environment;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.BoundHashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;
+import pojo.utils.RandomUtils;
+import top.takefly.core.dao.user.UserDao;
+import top.takefly.core.pojo.entity.PageResult;
+import top.takefly.core.pojo.user.User;
+import top.takefly.core.pojo.user.UserQuery;
+import top.takefly.core.service.UserService;
+
+import javax.jms.JMSException;
+import javax.jms.MapMessage;
+import javax.jms.Message;
+import javax.jms.Session;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 服务实现层
+ *
+ * @author Administrator
+ */
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private UserDao userDao;
+
+    /**
+     * 查询全部
+     */
+    @Override
+    public List<User> findAll() {
+        return userDao.selectByExample(null);
+    }
+
+    /**
+     * 按分页查询
+     */
+    @Override
+    public PageResult findPage(int pageNum, int pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        Page<User> page = (Page<User>) userDao.selectByExample(null);
+        return new PageResult((int) page.getTotal(), page.getResult());
+    }
+
+    /**
+     * 增加
+     */
+    @Override
+    public void add(User user) {
+        System.out.println(user);
+        userDao.insert(user);
+    }
+
+
+    /**
+     * 修改
+     */
+    @Override
+    public void update(User user) {
+        userDao.updateByPrimaryKey(user);
+    }
+
+    /**
+     * 根据ID获取实体
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public User findOne(Long id) {
+        return userDao.selectByPrimaryKey(id);
+    }
+
+    /**
+     * 批量删除
+     */
+    @Override
+    public void delete(Long[] ids) {
+        for (Long id : ids) {
+            userDao.deleteByPrimaryKey(id);
+        }
+    }
+
+
+    @Override
+    public PageResult findPage(User user, int pageNum, int pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+
+        UserQuery example = new UserQuery();
+        UserQuery.Criteria criteria = example.createCriteria();
+
+        if (user != null) {
+            if (user.getUsername() != null && user.getUsername().length() > 0) {
+                criteria.andUsernameLike("%" + user.getUsername() + "%");
+            }
+            if (user.getPassword() != null && user.getPassword().length() > 0) {
+                criteria.andPasswordLike("%" + user.getPassword() + "%");
+            }
+            if (user.getPhone() != null && user.getPhone().length() > 0) {
+                criteria.andPhoneLike("%" + user.getPhone() + "%");
+            }
+            if (user.getEmail() != null && user.getEmail().length() > 0) {
+                criteria.andEmailLike("%" + user.getEmail() + "%");
+            }
+            if (user.getSourceType() != null && user.getSourceType().length() > 0) {
+                criteria.andSourceTypeLike("%" + user.getSourceType() + "%");
+            }
+            if (user.getNickName() != null && user.getNickName().length() > 0) {
+                criteria.andNickNameLike("%" + user.getNickName() + "%");
+            }
+            if (user.getName() != null && user.getName().length() > 0) {
+                criteria.andNameLike("%" + user.getName() + "%");
+            }
+            if (user.getStatus() != null && user.getStatus().length() > 0) {
+                criteria.andStatusLike("%" + user.getStatus() + "%");
+            }
+            if (user.getHeadPic() != null && user.getHeadPic().length() > 0) {
+                criteria.andHeadPicLike("%" + user.getHeadPic() + "%");
+            }
+            if (user.getQq() != null && user.getQq().length() > 0) {
+                criteria.andQqLike("%" + user.getQq() + "%");
+            }
+            if (user.getIsMobileCheck() != null && user.getIsMobileCheck().length() > 0) {
+                criteria.andIsMobileCheckLike("%" + user.getIsMobileCheck() + "%");
+            }
+            if (user.getIsEmailCheck() != null && user.getIsEmailCheck().length() > 0) {
+                criteria.andIsEmailCheckLike("%" + user.getIsEmailCheck() + "%");
+            }
+            if (user.getSex() != null && user.getSex().length() > 0) {
+                criteria.andSexLike("%" + user.getSex() + "%");
+            }
+
+        }
+
+        Page<User> page = (Page<User>) userDao.selectByExample(example);
+        return new PageResult((int) page.getTotal(), page.getResult());
+    }
+
+    @Autowired
+    private ActiveMQQueue sendRegisterCode;
+
+    @Autowired
+    private JmsTemplate jmsTemplate;
+
+    @Value("${templateCode}")
+    private String templateCode;
+
+    @Value("${signName}")
+    private String signName;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Override
+    public void sendRegisterCode(String phone) {
+        BoundHashOperations registerCode = redisTemplate.boundHashOps("registerCode");
+        String code = RandomUtils.genRn();
+        //将验证码存入redis
+        registerCode.put(phone, code);
+        System.out.println("code="+code);
+        HashMap map = new HashMap(16);
+        map.put("phoneNum", phone);
+        map.put("signName", signName);
+        map.put("templateCode", templateCode);
+        map.put("templateParam", "{\"number\":\"" + code + "\"}");
+        jmsTemplate.send(sendRegisterCode, new MessageCreator() {
+            @Override
+            public Message createMessage(Session session) throws JMSException {
+                String messageStr = JSON.toJSONString(map);
+                return session.createTextMessage(messageStr);
+            }
+        });
+    }
+
+}

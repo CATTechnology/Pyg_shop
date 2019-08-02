@@ -1,0 +1,12 @@
+Ctrl+F，查找
+Ctrl+R，替换
+F3，查找下一个
+Shift+F3，查找上一个
+Ctrl+Shift+F，在路径中查找
+Ctrl+Shift+R，在路径中替换
+Ctrl+Shift+S，搜索结构
+Ctrl+Shift+M，替换结构
+Alt+F7，查找用法
+Ctrl+Alt+F7，显示用法
+Ctrl+F7，在文件中查找用法
+Ctrl+Shift+F7，在文件中高亮显示用法
